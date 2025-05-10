@@ -2,6 +2,7 @@ import csv
 import json
 import logging
 from datetime import datetime
+from django.utils.timezone import make_aware
 from django.db import transaction
 from core.models import (
     Building, Department, PrinterModel, Printer, User,
@@ -62,7 +63,7 @@ def import_print_events_from_json(events):
                 byte_size = int(e.get("Param7") or 0)
                 pages = int(e.get("Param8") or 0)
                 timestamp_ms = int(str(e.get("TimeCreated", "0")).replace("/Date(", "").replace(")/", ""))
-                timestamp = datetime.fromtimestamp(timestamp_ms / 1000)
+                timestamp = make_aware(datetime.fromtimestamp(timestamp_ms / 1000))
                 job_id = e.get("JobID") or "UNKNOWN"
 
                 if PrintEvent.objects.filter(job_id=job_id).exists():
@@ -99,32 +100,43 @@ def import_print_events_from_json(events):
                     }
                 )
 
-                user = User.objects.filter(username=username).first()
-                if not user:
-                    errors.append(f"❌ Пользователь не найден: {username}")
-                    continue
+                user, _ = User.objects.get_or_create(
+                    username=username,
+                    defaults={
+                        "fio": username  # или логика по умолчанию, если ФИО неизвестно
+                    }
+                )
 
                 # Разбор компьютера
                 computer_name = (e.get("Param4") or "").strip().lower()
                 computer = None
                 if computer_name:
                     computer = Computer.objects.filter(hostname=computer_name).first()
-                    if not computer and len(computer_name.split("-")) == 4:
-                        bld, dept, room_num, num = computer_name.split("-")
-                        building_c, _ = Building.objects.get_or_create(code=bld, defaults={"name": bld.upper()})
-                        department_c, _ = Department.objects.get_or_create(code=dept, defaults={"name": dept.upper()})
-                        computer = Computer.objects.create(
-                            hostname=computer_name,
-                            building=building_c,
-                            department=department_c,
-                            room_number=room_num,
-                            number_in_room=int(num) if num.isdigit() else 0
-                        )
-                    elif not computer:
-                        computer = Computer.objects.create(
-                            hostname=computer_name,
-                            full_name=computer_name
-                        )
+
+                    if not computer:
+                        parts = computer_name.split("-")
+                        if len(parts) == 4:
+                            bld, dept, room_num, num = parts
+                            building_c, _ = Building.objects.get_or_create(code=bld, defaults={"name": bld.upper()})
+                            department_c, _ = Department.objects.get_or_create(code=dept,
+                                                                               defaults={"name": dept.upper()})
+
+                            computer, _ = Computer.objects.get_or_create(
+                                hostname=computer_name,
+                                defaults={
+                                    "building": building_c,
+                                    "department": department_c,
+                                    "room_number": room_num,
+                                    "number_in_room": int(num) if num.isdigit() else 0
+                                }
+                            )
+                        else:
+                            computer, _ = Computer.objects.get_or_create(
+                                hostname=computer_name,
+                                defaults={
+                                    "full_name": computer_name
+                                }
+                            )
 
                 # Разбор порта
                 port_name = (e.get("Param6") or "").strip().lower()

@@ -2,6 +2,8 @@ from datetime import datetime
 from django.shortcuts import render
 from django.db.models import Sum, Q
 from django.http import HttpResponse
+from django.utils.dateparse import parse_date
+from django.utils.timezone import make_aware
 import io
 import xlsxwriter
 from core.models import PrintEvent, Department, Printer, PrinterModel, User
@@ -29,15 +31,15 @@ def print_events_view(request):
 
     if start_date_str:
         try:
-            start_dt = datetime.strptime(start_date_str, "%Y-%m-%d")
-            base_query = base_query.filter(timestamp__gte=start_dt)
+            start_dt = make_aware(datetime.strptime(start_date_str, "%Y-%m-%d"))
+            query = query.filter(timestamp__gte=start_dt)
         except ValueError:
             pass
 
     if end_date_str:
         try:
-            end_dt = datetime.strptime(end_date_str, "%Y-%m-%d")
-            end_dt = end_dt.replace(hour=23, minute=59, second=59)
+            end_dt = datetime.strptime(end_date_str, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
+            end_dt = make_aware(end_dt)
             base_query = base_query.filter(timestamp__lte=end_dt)
         except ValueError:
             pass
@@ -87,25 +89,60 @@ def print_tree_view(request):
 
         total_pages += event.pages
 
-        temp_tree.setdefault(dept_name, {"total": 0, "printers": {}})
-        dept = temp_tree[dept_name]
+        dept = temp_tree.setdefault(dept_name, {"total": 0, "printers": {}})
         dept["total"] += event.pages
 
-        dept["printers"].setdefault(printer_name, {"total": 0, "users": {}})
-        printer = dept["printers"][printer_name]
+        printer = dept["printers"].setdefault(printer_name, {"total": 0, "users": {}})
         printer["total"] += event.pages
 
-        printer["users"].setdefault(user_name, {"total": 0, "docs": {}})
-        user = printer["users"][user_name]
+        user = printer["users"].setdefault(user_name, {"total": 0, "docs": {}})
         user["total"] += event.pages
 
-        user["docs"].setdefault(doc_name, []).append({
+        doc_list = user["docs"].setdefault(doc_name, [])
+        doc_list.append({
             "pages": event.pages,
             "timestamp": event.timestamp
         })
 
-    tree = temp_tree
+    # Пост-обработка: форматирование строк заранее
+    tree = {}
+    for dept_name, dept_data in temp_tree.items():
+        dept_total = dept_data["total"]
+        dept_percent = (dept_total / total_pages) * 100 if total_pages else 0
+        dept_entry = {
+            "total_str": f"{dept_total:5d}",
+            "percent_str": f"{dept_percent:5.1f}%",
+            "printers": {}
+        }
 
+        for printer_name, printer_data in dept_data["printers"].items():
+            printer_total = printer_data["total"]
+            printer_entry = {
+                "total_str": f"{printer_total:5d}",
+                "users": {}
+            }
+
+            for user_name, user_data in printer_data["users"].items():
+                user_total = user_data["total"]
+                percent_of_printer = (user_total / printer_total) * 100 if printer_total else 0
+                user_entry = {
+                    "total_str": f"{user_total:5d}",
+                    "percent_str": f"{percent_of_printer:5.1f}%",
+                    "docs": user_data["docs"]
+                }
+
+                printer_entry["users"][user_name] = user_entry
+
+            dept_entry["printers"][printer_name] = printer_entry
+
+        tree[dept_name] = dept_entry
+
+    return render(request, "core/print_tree.html", {
+        "tree": tree,
+        "total_pages": total_pages,
+        "start_date": start_date_str,
+        "end_date": end_date_str
+    })
     return render(request, "core/print_tree.html", {
         "tree": tree,
         "total_pages": total_pages,

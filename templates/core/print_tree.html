@@ -50,28 +50,28 @@
 
   <div class="tree">
     <ul>
-      {% for dept, dept_data in tree.items %}
+      {% for dept_name, dept_data in tree.items %}
         <li>
           <span class="toggle text-primary fw-bold">
-            <pre>📁 {{ dept }} — {{ "%5d"|format(dept_data.total) }} стр. ({{ "%5.1f"|format((dept_data.total / total_pages) * 100) }}%)</pre>
+            <pre>📁 {{ dept_name }} — {{ dept_data.total_str }} стр. ({{ dept_data.percent_str }})</pre>
           </span>
           <ul style="display: none;">
-            {% for printer, printer_data in dept_data.printers.items %}
+            {% for printer_name, printer_data in dept_data.printers.items %}
               <li>
                 <span class="toggle text-success">
-                  <pre>🖨️ {{ printer }} — {{ "%5d"|format(printer_data.total) }} стр.</pre>
+                  <pre>🖨️ {{ printer_name }} — {{ printer_data.total_str }} стр.</pre>
                 </span>
                 <ul style="display: none;">
-                  {% for user, user_data in printer_data.users.items %}
+                  {% for user_name, user_data in printer_data.users.items %}
                     <li>
                       <span class="toggle text-dark">
-                        <pre>👤 {{ user }} — {{ "%5d"|format(user_data.total) }} стр. ({{ "%5.1f"|format((user_data.total / printer_data.total) * 100) }}%)</pre>
+                        <pre>👤 {{ user_name }} — {{ user_data.total_str }} стр. ({{ user_data.percent_str }})</pre>
                       </span>
                       <ul style="display: none;">
                         {% for doc, entries in user_data.docs.items %}
                           {% for entry in entries %}
                             <li>
-                              <pre>📄 {{ doc }} — {{ "%5d"|format(entry.pages) }} стр. — {{ entry.timestamp|date:"d.m.Y H:i" }}</pre>
+                              <pre>📄 {{ doc }} — {{ entry.pages }} стр. — {{ entry.timestamp|date:"d.m.Y H:i" }}</pre>
                             </li>
                           {% endfor %}
                         {% endfor %}
