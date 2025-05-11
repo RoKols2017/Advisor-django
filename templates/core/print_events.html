@@ -1,82 +1,86 @@
-<!doctype html>
-<html lang="ru">
-<head>
-  <meta charset="UTF-8">
-  <title>События печати</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="container mt-4">
+{% extends "base.html" %}
 
-  <a href="{% url 'index' %}" class="btn btn-secondary mb-3">🔙 Назад</a>
-  <h1>🖨️ События печати</h1>
+{% block title %}События печати{% endblock %}
 
-  <form method="GET" class="row g-3 mb-4">
-    <div class="col-md-3">
-      <label>📁 Подразделение</label>
-      <select name="dept" class="form-select">
-        <option value="">Все</option>
-        {% for d in departments %}
-          <option value="{{ d.code }}" {% if d.code == selected_dept %}selected{% endif %}>
-            {{ d.code }} — {{ d.name }}
-          </option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="col-md-2">
-      <label>📆 С</label>
-      <input type="date" name="start_date" class="form-control" value="{{ start_date }}">
-    </div>
-    <div class="col-md-2">
-      <label>📆 По</label>
-      <input type="date" name="end_date" class="form-control" value="{{ end_date }}">
-    </div>
-    <div class="col-md-2 d-flex align-items-end">
-      <button type="submit" class="btn btn-primary">🔍 Фильтровать</button>
-    </div>
-    <div class="col-md-2 d-flex align-items-end">
-      <a href="{% url 'print_events' %}" class="btn btn-secondary">Сброс</a>
-    </div>
-  </form>
+{% block content %}
+<div class="card shadow-sm">
+  <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">🖨️ События печати</h5>
+    <a href="{% url 'index' %}" class="btn btn-light btn-sm">🔙 Назад</a>
+  </div>
+  <div class="card-body">
 
-  <p>
-    <strong>🧮 Всего страниц:</strong> {{ total_pages }}
-    <br>
-    <small class="text-muted">
-      Период:
-      {% if start_date or end_date %}
-        {% if start_date %}с {{ start_date }}{% endif %}
-        {% if start_date and end_date %} по {% endif %}
-        {% if end_date %}{{ end_date }}{% endif %}
-      {% else %}
-        отсутствует
-      {% endif %}
-    </small>
-  </p>
+    <form method="GET" class="row g-3 mb-4 align-items-end">
+      <div class="col-md-4">
+        <label for="dept" class="form-label">📁 Подразделение</label>
+        <select name="dept" id="dept" class="form-select">
+          <option value="">Все</option>
+          {% for d in departments %}
+            <option value="{{ d.code }}" {% if d.code == selected_dept %}selected{% endif %}>
+              {{ d.code }} — {{ d.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">📆 С</label>
+        <input type="date" name="start_date" class="form-control" value="{{ start_date }}">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">📆 По</label>
+        <input type="date" name="end_date" class="form-control" value="{{ end_date }}">
+      </div>
+      <div class="col-md-2 d-grid gap-2">
+        <button type="submit" class="btn btn-primary">🔍 Фильтр</button>
+        <a href="{% url 'print_events' %}" class="btn btn-outline-secondary">Сброс</a>
+      </div>
+    </form>
 
-  <table class="table table-bordered table-hover table-sm">
-    <thead class="table-dark">
-      <tr>
-        <th>Дата</th>
-        <th>ФИО</th>
-        <th>Принтер</th>
-        <th>Документ</th>
-        <th>Страниц</th>
-      </tr>
-    </thead>
-    <tbody>
-    {% for event in events %}
-      <tr>
-        <td>{{ event.timestamp|date:"d.m.Y H:i" }}</td>
-        <td>{{ event.user.fio }}</td>
-        <td>
-          {{ event.printer.model.code }}-{{ event.printer.building.code }}-{{ event.printer.department.code }}-{{ event.printer.room_number }}-{{ event.printer.printer_index }}
-        </td>
-        <td>{{ event.document_name }}</td>
-        <td>{{ event.pages }}</td>
-      </tr>
-    {% endfor %}
-    </tbody>
-  </table>
+    <p>
+      <strong>🧮 Всего страниц:</strong> {{ total_pages }}<br>
+      <small class="text-muted">
+        Период:
+        {% if start_date or end_date %}
+          {% if start_date %}с {{ start_date }}{% endif %}
+          {% if start_date and end_date %} по {% endif %}
+          {% if end_date %}{{ end_date }}{% endif %}
+        {% else %}
+          не указан
+        {% endif %}
+      </small>
+    </p>
 
-</body>
-</html>
+    {% if events %}
+      <div class="table-responsive">
+        <table class="table table-bordered table-striped table-sm align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Дата</th>
+              <th>ФИО</th>
+              <th>Принтер</th>
+              <th>Документ</th>
+              <th>Страниц</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for event in events %}
+              <tr>
+                <td>{{ event.timestamp|date:"d.m.Y H:i" }}</td>
+                <td>{{ event.user.fio }}</td>
+                <td>
+                  {{ event.printer.model.code }}-{{ event.printer.building.code }}-{{ event.printer.department.code }}-{{ event.printer.room_number }}-{{ event.printer.printer_index }}
+                </td>
+                <td>{{ event.document_name }}</td>
+                <td>{{ event.pages }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="alert alert-warning">Нет событий печати по заданным условиям.</div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}
