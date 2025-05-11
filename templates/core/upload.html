@@ -3,45 +3,60 @@
 {% block title %}Импорт данных{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-  <div class="col-md-8">
-    <div class="card shadow-sm">
-      <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">📥 Импорт данных</h5>
-        <a href="{% url 'index' %}" class="btn btn-sm btn-dark">🔙 Назад</a>
-      </div>
-      <div class="card-body">
+<div class="container my-4">
+  <div class="row justify-content-center">
+    <div class="col-md-10">
+      <div class="card shadow">
+        <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">📥 Импорт данных</h5>
+          <a href="{% url 'index' %}" class="btn btn-sm btn-dark">🔙 Назад</a>
+        </div>
+        <div class="card-body">
 
-        {% if messages %}
-          {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-              {{ message }}
-              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
+          {% if messages %}
+            {% for message in messages %}
+              <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
+              </div>
+            {% endfor %}
+          {% endif %}
+
+          <div class="row">
+            <!-- CSV секция -->
+            <div class="col-md-6">
+              <div class="border p-3 mb-4 rounded bg-light">
+                <h6 class="mb-3">👥 Импорт пользователей (CSV)</h6>
+                <form method="POST" enctype="multipart/form-data">
+                  {% csrf_token %}
+                  <input type="hidden" name="type" value="users">
+                  <div class="mb-3">
+                    <label for="csv-file" class="form-label">Файл CSV:</label>
+                    <input type="file" name="file" id="csv-file" class="form-control" accept=".csv" required>
+                  </div>
+                  <button type="submit" class="btn btn-success w-100">🚀 Загрузить CSV</button>
+                </form>
+              </div>
             </div>
-          {% endfor %}
-        {% endif %}
 
-        <form method="POST" enctype="multipart/form-data" class="row g-3">
-          {% csrf_token %}
-
-          <div class="col-md-6">
-            <label for="type" class="form-label">📁 Тип данных:</label>
-            <select name="type" id="type" class="form-select">
-              <option value="users">Пользователи (CSV)</option>
-              <option value="events">События печати (JSON)</option>
-            </select>
+            <!-- JSON секция -->
+            <div class="col-md-6">
+              <div class="border p-3 mb-4 rounded bg-light">
+                <h6 class="mb-3">🖨️ Импорт событий печати (JSON)</h6>
+                <form method="POST" enctype="multipart/form-data">
+                  {% csrf_token %}
+                  <input type="hidden" name="type" value="events">
+                  <div class="mb-3">
+                    <label for="json-file" class="form-label">Файл JSON:</label>
+                    <input type="file" name="file" id="json-file" class="form-control" accept=".json" required>
+                  </div>
+                  <button type="submit" class="btn btn-primary w-100">🚀 Загрузить JSON</button>
+                </form>
+              </div>
+            </div>
           </div>
 
-          <div class="col-md-6">
-            <label for="file" class="form-label">📂 Файл:</label>
-            <input type="file" name="file" id="file" class="form-control" required>
-          </div>
-
-          <div class="col-md-12 d-grid">
-            <button type="submit" class="btn btn-success">🚀 Загрузить</button>
-          </div>
-        </form>
-
+        </div>
       </div>
     </div>
   </div>

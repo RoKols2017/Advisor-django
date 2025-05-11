@@ -1,6 +1,6 @@
 from datetime import datetime
 from django.shortcuts import render
-from django.db.models import Sum, Q
+from django.db.models import Min, Max, Sum, Q
 from django.http import HttpResponse
 from django.utils.dateparse import parse_date
 from django.utils.timezone import make_aware
@@ -83,6 +83,12 @@ def print_tree_view(request):
         except ValueError:
             pass
 
+    # Определяем минимальную и максимальную дату событий
+    date_range = PrintEvent.objects.aggregate(
+        min_date=Min("timestamp"),
+        max_date=Max("timestamp")
+    )
+
     temp_tree = {}
     total_pages = 0
 
@@ -158,8 +164,11 @@ def print_tree_view(request):
         "tree": tree,
         "total_pages": total_pages,
         "start_date": start_date_str,
-        "end_date": end_date_str
+        "end_date": end_date_str,
+        "db_min_date": date_range["min_date"],
+        "db_max_date": date_range["max_date"]
     })
+
 
 def export_tree_excel_view(request):
     start_date_str = request.GET.get("start_date", "").strip()

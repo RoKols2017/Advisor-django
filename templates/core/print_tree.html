@@ -3,72 +3,75 @@
 {% block title %}Дерево печати{% endblock %}
 
 {% block content %}
-<div class="card shadow-sm">
-  <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-    <h5 class="mb-0">🌲 Структура печати по подразделениям</h5>
-    <a href="{% url 'index' %}" class="btn btn-light btn-sm">🔙 Назад</a>
-  </div>
-  <div class="card-body">
+<div class="container my-4">
+  <div class="card shadow">
+    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">🌲 Отчёт по структуре печати</h5>
+      <a href="{% url 'index' %}" class="btn btn-sm btn-light">🔙 Назад</a>
+    </div>
+    <div class="card-body">
 
-    <form method="GET" class="row g-3 mb-4">
-      <div class="col-md-3">
-        <label class="form-label">📅 С</label>
-        <input type="date" name="start_date" class="form-control" value="{{ start_date }}">
-      </div>
-      <div class="col-md-3">
-        <label class="form-label">📅 По</label>
-        <input type="date" name="end_date" class="form-control" value="{{ end_date }}">
-      </div>
-      <div class="col-md-3 d-flex align-items-end gap-2">
-        <button type="submit" class="btn btn-primary w-100">🔍 Фильтр</button>
-        <a href="{% url 'print_tree' %}" class="btn btn-outline-secondary w-100">Сброс</a>
-      </div>
-    </form>
+       {% if db_min_date and db_max_date %}
+         <p class="text-muted mb-2">
+           📂 В базе содержатся события печати за период:
+           <strong>{{ db_min_date|date:"d.m.Y" }}</strong>
+           — <strong>{{ db_max_date|date:"d.m.Y" }}</strong>
+         </p>
+       {% endif %}
 
-    <p>
-      <strong>🧮 Всего страниц по организации:</strong> {{ total_pages }}<br>
-      {% if start_date or end_date %}
-        <small class="text-muted">
-          Период:
-          {% if start_date %}с {{ start_date }}{% endif %}
-          {% if start_date and end_date %} по {% endif %}
-          {% if end_date %}{{ end_date }}{% endif %}
-        </small>
-      {% endif %}
-    </p>
+          <!-- Форма фильтрации -->
+      <form method="GET" class="row g-3 mb-4">
+        <div class="col-md-3">
+          <label class="form-label">📅 С</label>
+          <input type="date" name="start_date" class="form-control" value="{{ start_date }}">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">📅 По</label>
+          <input type="date" name="end_date" class="form-control" value="{{ end_date }}">
+        </div>
+        <div class="col-md-3 d-flex align-items-end gap-2">
+          <button type="submit" class="btn btn-primary w-100">🔍 Фильтр</button>
+          <a href="{% url 'print_tree' %}" class="btn btn-outline-secondary w-100">Сброс</a>
+        </div>
+      </form>
 
-    {% if tree %}
-    <div class="tree-wrapper">
-      <div class="tree">
-        <ul>
+      <p>
+        <strong>🧮 Всего страниц:</strong> {{ total_pages }}<br>
+      </p>
+
+      {% if tree %}
+      <div class="tree-wrapper mx-auto">
+        <ul class="list-unstyled">
           {% for dept_name, dept_data in tree.items %}
             <li>
-              <div class="toggle tree-line text-primary fw-bold">
+              <div class="toggle tree-line fw-bold text-primary">
                 <span>📁 {{ dept_data.name_str }}</span>
-                <span>{{ dept_data.total_str }} стр.</span>
-                <span>{{ dept_data.percent_str }}</span>
+                <span title="{{ dept_data.total_str }} страниц">{{ dept_data.total_str }} стр.</span>
+                <span title="{{ dept_data.percent_str }} от общего количества">{{ dept_data.percent_str }}</span>
               </div>
-              <ul style="display: none;">
+              <ul class="list-unstyled ps-3" style="display: none;">
                 {% for printer_name, printer_data in dept_data.printers.items %}
                   <li>
                     <div class="toggle tree-line text-success">
                       <span>🖨️ {{ printer_data.name_str }}</span>
-                      <span>{{ printer_data.total_str }} стр.</span>
+                      <span title="{{ printer_data.total_str }} страниц">{{ printer_data.total_str }} стр.</span>
                       <span></span>
                     </div>
-                    <ul style="display: none;">
+                    <ul class="list-unstyled ps-3" style="display: none;">
                       {% for user_name, user_data in printer_data.users.items %}
                         <li>
                           <div class="toggle tree-line">
                             <span>👤 {{ user_data.name_str }}</span>
-                            <span>{{ user_data.total_str }} стр.</span>
-                            <span>{{ user_data.percent_str }}</span>
+                            <span title="{{ user_data.total_str }} страниц">{{ user_data.total_str }} стр.</span>
+                            <span title="{{ user_data.percent_str }} от общего">{{ user_data.percent_str }}</span>
                           </div>
-                          <ul style="display: none;">
+                          <ul class="list-unstyled ps-3" style="display: none;">
                             {% for entry in user_data.docs %}
-                              <li class="ps-3">
-                                <div class="tree-line">
-                                  📄 {{ entry.doc_str }} — {{ entry.pages }} стр. — {{ entry.timestamp|date:"d.m.Y H:i" }}
+                              <li>
+                                <div class="tree-line text-muted small">
+                                  <span class="doc-name">📄 {{ entry.doc_str }}</span>
+                                  <span class="doc-pages">{{ entry.pages }} стр.</span>
+                                  <span class="doc-date">{{ entry.timestamp|date:"d.m.Y H:i" }}</span>
                                 </div>
                               </li>
                             {% endfor %}
@@ -83,45 +86,71 @@
           {% endfor %}
         </ul>
       </div>
-    </div>
-    {% else %}
-      <div class="alert alert-warning">Нет данных для отображения дерева печати.</div>
-    {% endif %}
+      {% else %}
+        <div class="alert alert-warning mt-4">Нет данных для отображения дерева печати.</div>
+      {% endif %}
 
+    </div>
   </div>
 </div>
 
 <style>
-  .tree-wrapper {
-    max-width: 960px;
-    margin: 0 auto;
-  }
-  .tree ul {
-    list-style-type: none;
-    padding-left: 1rem;
-  }
-  .tree-line {
-    padding: 4px 8px;
-    border-bottom: 1px dashed #ddd;
-    font-family: monospace;
-    display: flex;
-    justify-content: space-between;
-    gap: 1rem;
-  }
-  .tree-line span:nth-child(2) {
-    min-width: 90px;
-    text-align: right;
-    color: green;
-  }
-  .tree-line span:nth-child(3) {
-    min-width: 70px;
-    text-align: right;
-    color: #0d6efd;
-  }
-  .toggle {
-    cursor: pointer;
-    user-select: none;
-  }
+.tree-wrapper {
+  max-width: 960px;
+}
+.tree-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-family: monospace;
+  padding: 6px 10px;
+  border-bottom: 1px dashed #ccc;
+  align-items: center;
+}
+.tree-line span:nth-child(1) {
+  flex-grow: 1;
+}
+.tree-line span:nth-child(2),
+.tree-line span:nth-child(3) {
+  min-width: 90px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+.tree-line span:nth-child(2) {
+  color: #28a745;
+}
+.tree-line span:nth-child(3) {
+  color: #007bff;
+}
+.toggle {
+  cursor: pointer;
+  user-select: none;
+}
+.tree-line.small span {
+  font-family: monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.tree-line.small .doc-name {
+  flex-grow: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 70ch; /* регулируемая длина! */
+}
+.tree-line.small .doc-pages {
+  min-width: 80px;
+  color: #28a745;
+  text-align: right;
+  font-weight: 600;
+}
+.tree-line.small .doc-date {
+  min-width: 130px;
+  text-align: right;
+  color: #6c757d;
+}
 </style>
 
 <script>

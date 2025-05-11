@@ -1,6 +1,6 @@
 from django.urls import path
 from core.views import main_views, upload_views, import_views
-
+from core.views.chart_views import print_chart_view
 urlpatterns = [
     path('', main_views.index, name='index'),
 
@@ -10,6 +10,7 @@ urlpatterns = [
     # Print Events
     path('print-events/', main_views.print_events_view, name='print_events'),
     path('print-tree/', main_views.print_tree_view, name='print_tree'),
+    path("print-chart/", print_chart_view, name="print_chart"),
     path('print-tree/export/', main_views.export_tree_excel_view, name='export_tree_excel'),
 
     # Upload
